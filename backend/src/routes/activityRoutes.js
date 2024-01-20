@@ -47,7 +47,28 @@ router.get('/steps/most-active-day', (req, res) => {
 
 //步数趋势
 router.get('/steps/trend', (req, res) => {
-  db.query('SELECT date, steps FROM activity ORDER BY date', (error, results) => {
+  const range = req.query.range || 'day';
+  let query = '';
+
+  switch(range) {
+    case 'day':
+      query = 'SELECT date, SUM(steps) AS steps FROM activity GROUP BY date ORDER BY date ASC LIMIT 12';
+      break;
+    case 'week':
+      query = 'SELECT YEARWEEK(date) AS week, SUM(steps) AS steps FROM activity GROUP BY week ORDER BY week ASC LIMIT 12';
+      break;
+    case 'month':
+      query = 'SELECT DATE_FORMAT(date, "%Y-%m") AS month, SUM(steps) AS steps FROM activity GROUP BY month ORDER BY month ASC LIMIT 12';
+      break;
+    case 'year':
+      query = 'SELECT YEAR(date) AS year, SUM(steps) AS steps FROM activity GROUP BY year ORDER BY year ASC LIMIT 12';
+      break;
+    default:
+      res.status(400).send('Invalid range');
+      return;
+  }
+
+  db.query(query, (error, results) => {
     if (error) {
       res.status(500).send('Error retrieving data');
     } else {
