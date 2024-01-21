@@ -4,6 +4,8 @@ import AverageStepsCard from '../components/AverageStepsCard';
 import MostActiveDayCard from '../components/MostActiveDayCard';
 import StepsTrendCard from '../components/StepsTrendCard';
 import CaloriesStepsCard from '../components/CaloriesStepsCard';
+import StepsAssessmentCard from '../components/StepsAssessmentCard';
+import MonthlyStepsSegmentCard from '../components/MonthlyStepsSegmentCard';
 import { Row, Col } from 'antd';
 
 function DailySteps() {
@@ -15,6 +17,12 @@ function DailySteps() {
   const [stepsTrend, setStepsTrend] = useState([]);
   const [stepsCalories, setStepsCalories] = useState([]);
   const [timeRange, setTimeRange] = useState('day'); // 可选值: 'day', 'week', 'month', 'year'
+
+  const [passingSteps, setPassingSteps] = useState(10000); // 默认合格步数
+  const [passingRate, setPassingRate] = useState(null); // 合格率
+  const [range, setRange] = useState('month'); // 正确定义 range 和 setRange
+
+
 
   // 获取每日步数
   useEffect(() => {
@@ -56,6 +64,14 @@ function DailySteps() {
       .catch(error => console.error('Error:', error));
   }, []);
 
+  // 获取步数评估的函数
+  const fetchPassingRate = () => {
+    fetch(`/api/steps/assessment?range=${range}&passingSteps=${passingSteps}`)
+      .then(response => response.json())
+      .then(data => setPassingRate(data.passingRate))
+      .catch(error => console.error('Error:', error));
+  };
+
   return (
     <div>
       <h1 style={{ textAlign: 'center' }}>步数数据分析</h1>
@@ -72,7 +88,17 @@ function DailySteps() {
             fetchAverageSteps={fetchAverageSteps}
             averageSteps={averageSteps}
           />
+
           <MostActiveDayCard mostActiveDay={mostActiveDay} />
+
+          <StepsAssessmentCard
+            passingSteps={passingSteps}
+            setPassingSteps={setPassingSteps}
+            fetchPassingRate={fetchPassingRate}
+            passingRate={passingRate}
+            range={range} // 确保添加这一行
+            setRange={setRange} // 以及这一行
+          />
         </Col>
       </Row>
       <Row gutter={16}>
@@ -83,6 +109,12 @@ function DailySteps() {
           <CaloriesStepsCard stepsCalories={stepsCalories} />
         </Col>
       </Row>
+      <Row gutter={16}>
+        <Col span={24}>
+          <MonthlyStepsSegmentCard />
+        </Col>
+      </Row>
+
     </div>
   );
 }

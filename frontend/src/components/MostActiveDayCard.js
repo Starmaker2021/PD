@@ -6,7 +6,7 @@ function MostActiveDayCard({ mostActiveDay }) {
     return new Date(date).toLocaleDateString();
   };
   return (
-    <Card title="最活跃的一天" bordered={false}>
+    <Card title="最活跃的一天" style={{ marginTop: 16 }}>
       <p>{formatDate(mostActiveDay.date)}: {mostActiveDay.max_steps}步</p>
     </Card>
   );

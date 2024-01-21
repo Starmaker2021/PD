@@ -66,7 +66,7 @@ router.get('/steps/trend', (req, res) => {
     default:
       res.status(400).send('Invalid range');
       return;
-  }
+  } 
 
   db.query(query, (error, results) => {
     if (error) {
@@ -85,6 +85,64 @@ router.get('/steps/calories', (req, res) => {
     } else {
       res.json(results);
     }
+  });
+});
+
+//步数合格率
+router.get('/steps/assessment', (req, res) => {
+  const { range, passingSteps } = req.query;
+  
+  // 确定日期范围
+  const endDate = new Date();
+  const startDate = new Date();
+  if (range === "month") {
+    startDate.setMonth(endDate.getMonth() - 1);
+  } else if (range === "year") {
+    startDate.setFullYear(endDate.getFullYear() - 1);
+  } else {
+    return res.status(400).send('Invalid range');
+  }
+  
+  // 构建查询
+  const query = `
+    SELECT COUNT(*) AS totalDays,
+           SUM(CASE WHEN steps >= ? THEN 1 ELSE 0 END) AS passingDays
+    FROM activity
+    WHERE date BETWEEN ? AND ?`;
+
+  // 执行查询
+  db.query(query, [parseInt(passingSteps, 10), startDate, endDate], (error, results) => {
+    if (error) {
+      res.status(500).send('Error retrieving data');
+    } else {
+      const { totalDays, passingDays } = results[0];
+      const passingRate = (passingDays / totalDays * 100).toFixed(2);
+      res.json({ passingRate });
+    }
+  });
+});
+
+//步数分段统计
+router.get('/steps/monthly-segment', (req, res) => {
+  const year = req.query.year || new Date().getFullYear(); // 默认为当前年份
+  const query = `
+      SELECT 
+          DATE_FORMAT(date, '%Y-%m') AS month,
+          SUM(CASE WHEN steps BETWEEN 0 AND 5000 THEN 1 ELSE 0 END) AS '0-5000',
+          SUM(CASE WHEN steps BETWEEN 5001 AND 10000 THEN 1 ELSE 0 END) AS '5001-10000',
+          SUM(CASE WHEN steps BETWEEN 10001 AND 20000 THEN 1 ELSE 0 END) AS '10001-20000',
+          SUM(CASE WHEN steps > 20000 THEN 1 ELSE 0 END) AS '20001+'
+      FROM activity
+      WHERE YEAR(date) = ?
+      GROUP BY month
+      ORDER BY month;
+  `;
+
+  db.query(query, [year], (error, results) => {
+      if (error) {
+          return res.status(500).send('Error retrieving data');
+      }
+      res.json(results);
   });
 });
 
